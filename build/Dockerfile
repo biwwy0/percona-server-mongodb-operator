@@ -38,6 +38,11 @@ RUN find $GOPATH/pkg/mod -regextype posix-extended -iregex '.*(license|notice)(\
 
 FROM registry.access.redhat.com/${BASE_IMAGE}/ubi-minimal AS ubi
 RUN microdnf update -y && microdnf clean all
+# INF-6271: this image must never trust the compromised eMudhra-family roots
+# "emSign ECC Root CA - G3" and "Comodo AAA Services" (CVE-2026-91403 family).
+# Current ubi10 ca-certificates already excludes both; fail the build loudly if
+# a future base reintroduces them instead of silently shipping a bad bundle.
+RUN ! grep -riE "emSign ECC Root CA - G3|Comodo AAA Services" /etc/pki/ca-trust/ /etc/pki/tls/certs/ /etc/ssl/ 2>/dev/null
 
 LABEL name="Percona Server for MongoDB Operator" \
       vendor="Percona" \
